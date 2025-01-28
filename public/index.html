@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whoops, I did it again</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    /* General Styles */
+    body {
+      font-family: 'Cinzel', serif;
+      background: url('https://images.unsplash.com/photo-1548660175-593de89eb9d1') no-repeat center center fixed;
+      background-size: cover;
+      color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #f7d983;
+      text-shadow: 2px 2px 4px #000;
+    }
+
+    #sections {
+      width: 60%;
+      max-width: 500px;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 12px;
+      box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.5);
+      padding: 15px;
+    }
+
+    /* Section Styles */
+    .section {
+      margin-bottom: 15px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 1.2rem;
+      text-shadow: 1px 1px 2px #000;
+      cursor: pointer;
+    }
+
+    .header button {
+      border: none;
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 2px 2px 4px #000;
+    }
+
+    .lines {
+      margin-top: 8px;
+      margin-left: 15px;
+      border-left: 2px solid rgba(255, 255, 255, 0.5);
+      padding-left: 10px;
+    }
+
+    /* Line Styles */
+    .line {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-right: 8px;
+      cursor: pointer;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .circle.active {
+      background: linear-gradient(145deg, #0f7b0f, #19a519);
+      border: 2px solid #0c5f0c;
+    }
+
+    .circle.inactive {
+      background: linear-gradient(145deg, #7b0f0f, #a51919);
+      border: 2px solid #5f0c0c;
+    }
+
+    input {
+      margin-left: 8px;
+      padding: 3px;
+      border: 1px solid #774c2a;
+      border-radius: 5px;
+      background: #3b2c24;
+      color: #f4f4f4;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    input::placeholder {
+      color: #b6a99f;
+    }
+
+    /* Witch Theme */
+    .witch .header {
+      background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+      color: #cfe4ff;
+    }
+
+    .witch .header button {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+
+    /* Red Drake Theme - Updated */
+    .red-drake .header {
+      background: linear-gradient(90deg, #b91d1d, #ff6347); /* Red gradient */
+      color: #ffd1d1; /* Light text for contrast */
+    }
+
+    .red-drake .header button {
+      background: #ff6347; /* Tomato red */
+      color: #fff;
+    }
+
+    /* Wobba Theme */
+    .wobba .header {
+      background: linear-gradient(90deg, #7a4f18, #d9a066);
+      color: #ffe5c1;
+    }
+
+    .wobba .header button {
+      background: #d9a066;
+      color: #000000;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h1>Whoops, I did it again</h1>
+  <div id="sections"></div>
+
+  <script>
+    const socket = io();
+    const sectionsContainer = document.getElementById("sections");
+    let lines = [];
+
+    const sections = {
+      Witch: ["ch1", "ch2", "ch3", "ch4", "ch5", "ch6"],
+      RedDrake: ["ch1", "ch2", "ch3", "ch4", "ch5", "ch6"],
+      Wobba: ["ch1", "ch2", "ch3", "ch4", "ch5", "ch6"],
+    };
+
+    function renderSections() {
+      sectionsContainer.innerHTML = "";
+
+      Object.entries(sections).forEach(([sectionName, sectionChapters]) => {
+        const sectionDiv = document.createElement("div");
+        sectionDiv.className = `section ${sectionName.toLowerCase().replace(" ", "-")}`;
+
+        const header = document.createElement("div");
+        header.className = "header";
+        const headerText = document.createElement("span");
+        headerText.textContent = sectionName;
+
+        const toggleButton = document.createElement("button");
+        toggleButton.textContent = "Hide";
+        toggleButton.addEventListener("click", () => {
+          const linesDiv = sectionDiv.querySelector(".lines");
+          const isVisible = linesDiv.style.display !== "none";
+          linesDiv.style.display = isVisible ? "none" : "block";
+          toggleButton.textContent = isVisible ? "Show" : "Hide";
+        });
+
+        header.appendChild(headerText);
+        header.appendChild(toggleButton);
+
+        const linesDiv = document.createElement("div");
+        linesDiv.className = "lines";
+
+        sectionChapters.forEach((chapter) => {
+          const lineId = `${sectionName} ${chapter}`;
+          let line = lines.find((l) => l.text === lineId);
+
+          if (!line) {
+            line = { id: lineId, text: lineId, active: false, username: "" };
+            lines.push(line);
+          }
+
+          const lineDiv = document.createElement("div");
+          lineDiv.className = "line";
+
+          const circle = document.createElement("div");
+          circle.className = `circle ${line.active ? "active" : "inactive"}`;
+          circle.addEventListener("click", () => {
+            line.active = !line.active;
+            socket.emit("updateLine", line);
+            renderSections();
+          });
+
+          const text = document.createElement("span");
+          text.textContent = line.text;
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.placeholder = "Enter username";
+          input.value = line.username;
+          input.addEventListener("input", (e) => {
+            line.username = e.target.value;
+            socket.emit("updateLine", line);
+          });
+
+          lineDiv.appendChild(circle);
+          lineDiv.appendChild(text);
+          lineDiv.appendChild(input);
+          linesDiv.appendChild(lineDiv);
+        });
+
+        sectionDiv.appendChild(header);
+        sectionDiv.appendChild(linesDiv);
+        sectionsContainer.appendChild(sectionDiv);
+      });
+    }
+
+    socket.on("initialize", (serverLines) => {
+      lines = serverLines;
+      renderSections();
+    });
+
+    socket.on("updateLine", (updatedLine) => {
+      const index = lines.findIndex((line) => line.id === updatedLine.id);
+      if (index !== -1) {
+        lines[index] = updatedLine;
+        renderSections();
+      }
+    });
+  </script>
+</body>
+</html>
