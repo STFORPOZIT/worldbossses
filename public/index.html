@@ -9,8 +9,7 @@
     /* General Styles */
     body {
       font-family: 'Cinzel', serif;
-      background: url('https://images.unsplash.com/photo-1548660175-593de89eb9d1') no-repeat center center fixed;
-      background-size: cover;
+      background: #f0f0f0;
       color: #f4f4f4;
       margin: 0;
       padding: 0;
@@ -124,10 +123,10 @@
       color: #ffffff;
     }
 
-    /* Red Drake Theme - Updated */
+    /* Red Drake Theme */
     .red-drake .header {
-      background: linear-gradient(90deg, #b91d1d, #ff6347); /* Red gradient */
-      color: #ffd1d1; /* Light text for contrast */
+      background: linear-gradient(90deg, #8b0000, #ff4500); /* Dark red to fiery red */
+      color: #ffcccc;
     }
 
     .red-drake .header button {
@@ -163,6 +162,17 @@
       Wobba: ["ch1", "ch2", "ch3", "ch4", "ch5", "ch6"],
     };
 
+    function resetSection(sectionName) {
+      lines.forEach(line => {
+        if (line.text.startsWith(sectionName)) {
+          line.active = false; // Reset status (green/red circles)
+          line.username = ''; // Reset username input
+        }
+      });
+      socket.emit("resetLines", lines);
+      renderSections();
+    }
+
     function renderSections() {
       sectionsContainer.innerHTML = "";
 
@@ -175,17 +185,12 @@
         const headerText = document.createElement("span");
         headerText.textContent = sectionName;
 
-        const toggleButton = document.createElement("button");
-        toggleButton.textContent = "Hide";
-        toggleButton.addEventListener("click", () => {
-          const linesDiv = sectionDiv.querySelector(".lines");
-          const isVisible = linesDiv.style.display !== "none";
-          linesDiv.style.display = isVisible ? "none" : "block";
-          toggleButton.textContent = isVisible ? "Show" : "Hide";
-        });
+        const resetButton = document.createElement("button");
+        resetButton.textContent = `Reset ${sectionName}`;
+        resetButton.addEventListener("click", () => resetSection(sectionName));
 
         header.appendChild(headerText);
-        header.appendChild(toggleButton);
+        header.appendChild(resetButton);
 
         const linesDiv = document.createElement("div");
         linesDiv.className = "lines";
@@ -245,6 +250,11 @@
         lines[index] = updatedLine;
         renderSections();
       }
+    });
+
+    socket.on("resetLines", (resetLines) => {
+      lines = resetLines;
+      renderSections();
     });
   </script>
 </body>
